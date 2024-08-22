@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>משחק צורות לגיל מתחת ל-5</title>
+    <style>
+        body {
+            background-color: rgba(255, 255, 255, 0.9);
+            background-image: url('D:/AI/VS/Games/Learning Together/background-image.png');
+            background-size: cover;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            color: white;
+            direction: rtl;
+        }
+        #gameContainer {
+            margin: 20px auto;
+            width: 80%;
+            border: 3px solid #1E90FF;
+            padding: 10px;
+            border-radius: 10px;
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+        .shapeGroup {
+            display: inline-block;
+            margin: 10px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        .shapeGroup svg {
+            width: 40px;
+            height: 40px;
+            margin: 2px;
+        }
+        .shapeGroup.selected {
+            border: 2px solid gold;
+            opacity: 0.7;
+            transform: scale(1.1);
+        }
+        .scoreBox, .valueBox {
+            display: inline-block;
+            width: 100px;
+            height: 50px;
+            font-size: 1.5em;
+            line-height: 50px;
+            text-align: center;
+            border-radius: 5px;
+            margin: 20px;
+            color: white;
+        }
+        .scoreBox {
+            background-color: #007BFF;
+        }
+        .valueBox {
+            background-color: #38de2b;
+        }
+        .label {
+            font-size: 1.2em;
+            margin-bottom: 5px;
+            color: black;
+        }
+        .statusContainer {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+        }
+        #instruction {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+        }
+        #nextLevelButton, #restartButton, #backButton, #checkButton {
+            display: none;
+            font-size: 1.2em;
+            padding: 10px 15px;
+            margin-top: 20px;
+            cursor: pointer;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        #trophyContainer {
+            display: none;
+            margin-top: 30px;
+        }
+        #trophyContainer img {
+            width: 200px;
+        }
+        #timer {
+            font-size: 1.5em;
+            margin: 20px;
+        }
+        #instructionsText {
+            font-size: 1.5em;
+            margin: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 10px;
+        }
+        #targetNumber {
+            font-size: 2em;
+            color: #007BFF;
+            margin-bottom: 20px;
+        }
+        #playerContainer {
+            margin: 20px;
+        }
+        #playerContainer input, #playerContainer button {
+            font-size: 1.5em;
+            padding: 10px;
+            margin-top: 10px;
+            width: 300px;
+        }
+        #playerContainer input {
+            text-align: center;
+        }
+        #playerContainer button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>משחק צורות לגיל מתחת ל-5</h1>
+    <div id="instructionsText">
+        ברוכים הבאים למשחק הצורות! בשלב הראשון עליך לבחור קבוצות צורות שמגיעות למספר המבוקש.
+        בכל שלב תשתנה המטרה ואתה צריך להגיע למספר המבוקש באמצעות מספר קבוצות צורות.
+        בהצלחה!
+    </div>
+    <div id="gameContainer">
+        <div id="playerContainer">
+            <input type="text" id="playerName" placeholder="הזן את שמך כאן">
+            <button id="startButton">התחל משחק</button>
+        </div>
+        <div id="timer"></div>
+        <div id="targetNumber">המטרה: <span id="currentTarget">0</span></div>
+        <div id="shapesContainer"></div>
+        <div class="statusContainer">
+            <div>
+                <div class="label">נקודות</div>
+                <div class="scoreBox" id="score">0</div>
+            </div>
+            <div>
+                <div class="label">ערך נבחר</div>
+                <div class="valueBox" id="selectedValue">0</div>
+            </div>
+        </div>
+        <button id="checkButton" onclick="checkSelection()">בדוק בחירה</button>
+        <button id="nextLevelButton" onclick="nextLevel()">עבור לשלב הבא</button>
+        <button id="restartButton" onclick="restartGame()">שחק שוב</button>
+        <button id="backButton" onclick="goBack()">חזור לדף הראשי</button>
+    </div>
+    <div id="trophyContainer">
+        <img src="D:/AI/VS/Games/Learning Together/trophy.png" alt="גביע">
+        <div id="finalScore"></div>
+    </div>
+
+    <audio id="backgroundMusic" loop autoplay>
+        <source src="D:/AI/VS/Games/Learning Together/background-music.mp3" type="audio/mpeg">
+        הדפדפן שלך לא תומך בהשמעת קבצי אודיו.
+    </audio>
+
+    <audio id="winMusic">
+        <source src="D:/AI/VS/Games/Learning Together/win.mp3" type="audio/mpeg">
+        הדפדפן שלך לא תומך בהשמעת קבצי אודיו.
+    </audio>
+
+    <script>
+        const shapes = ['circle', 'square', 'triangle', 'star', 'diamond', 'heart'];
+        const colors = ['#FF6347', '#4682B4', '#32CD32', '#FFD700', '#EE82EE', '#1E90FF'];
+
+        let score = 0;
+        let level = 1;
+        let playerName = '';
+        let timerInterval;
+        let timeElapsed = 0;
+        let targetNumber = 10;
+
+        document.getElementById('startButton').addEventListener('click', function() {
+            startGame();
+        });
+
+        function startGame() {
+            playerName = document.getElementById('playerName').value;
+            if (!playerName) {
+                alert('אנא הזן את שמך כדי להתחיל');
+                return;
+            }
+            document.getElementById('playerContainer').style.display = 'none';
+            playBackgroundMusic();
+            startTimer();
+            loadLevel();
+        }
+
+        function playBackgroundMusic() {
+            const backgroundMusic = document.getElementById('backgroundMusic');
+            backgroundMusic.play().catch(error => {
+                console.error("Error playing background music:", error);
+            });
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeElapsed++;
+                document.getElementById('timer').innerText = `זמן: ${timeElapsed} שניות`;
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+        }
+
+        function loadLevel() {
+            const shapesContainer = document.getElementById('shapesContainer');
+            shapesContainer.innerHTML = '';
+
+            // יצירת מספר יעד חדש
+            targetNumber = Math.floor(Math.random() * 10) + 1;
+            document.getElementById('currentTarget').innerText = targetNumber;
+
+            // יצירת קבוצות צורות חדשות
+            for (let i = 0; i < 5; i++) {
+                const groupSize = Math.floor(Math.random() * targetNumber) + 1;
+                const shapeType = shapes[Math.floor(Math.random() * shapes.length)];
+                const shapeColor = colors[Math.floor(Math.random() * colors.length)];
+                const group = document.createElement('div');
+                group.classList.add('shapeGroup');
+
+                for (let j = 0; j < groupSize; j++) {
+                    group.appendChild(renderShape(shapeType, shapeColor));
+                }
+                group.onclick = () => selectShapeGroup(group, groupSize);
+                shapesContainer.appendChild(group);
+            }
+
+            document.getElementById('selectedValue').innerText = 0;
+            document.getElementById('checkButton').style.display = 'inline';
+        }
+
+        function renderShape(type, color) {
+            let shape;
+            switch (type) {
+                case 'circle':
+                    shape = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="${color}"/></svg>`;
+                    break;
+                case 'square':
+                    shape = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" fill="${color}"/></svg>`;
+                    break;
+                case 'triangle':
+                    shape = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><polygon points="12,4 20,20 4,20" fill="${color}"/></svg>`;
+                    break;
+                case 'star':
+                    shape = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><polygon points="12,2 15,10 23,10 17,15 19,23 12,18 5,23 7,15 1,10 9,10" fill="${color}"/></svg>`;
+                    break;
+                case 'diamond':
+                    shape = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><polygon points="12,4 20,12 12,20 4,12" fill="${color}"/></svg>`;
+                    break;
+                case 'heart':
+                    shape = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="${color}"/></svg>`;
+                    break;
+            }
+            let shapeElement = document.createElement('div');
+            shapeElement.innerHTML = shape;
+            return shapeElement;
+        }
+
+        function selectShapeGroup(group, value) {
+            group.classList.toggle('selected');
+            updateSelectedValue();
+        }
+
+        function updateSelectedValue() {
+            let selectedValue = 0;
+            const selectedGroups = document.querySelectorAll('.shapeGroup.selected');
+            selectedGroups.forEach(group => {
+                selectedValue += group.childNodes.length;
+            });
+            document.getElementById('selectedValue').innerText = selectedValue;
+        }
+
+        function checkSelection() {
+            const selectedValue = parseInt(document.getElementById('selectedValue').innerText);
+            if (selectedValue === targetNumber) {
+                score++;
+                document.getElementById('checkButton').style.display = 'none';
+                document.getElementById('nextLevelButton').style.display = 'inline';
+            } else {
+                alert("יש טעות, נסה שוב!");
+                resetSelection();
+            }
+        }
+
+        function resetSelection() {
+            const selectedGroups = document.querySelectorAll('.shapeGroup.selected');
+            selectedGroups.forEach(group => group.classList.remove('selected'));
+            document.getElementById('selectedValue').innerText = 0;
+        }
+
+        function nextLevel() {
+            level++;
+            if (level > 5) {
+                endGame();
+            } else {
+                document.getElementById('nextLevelButton').style.display = 'none';
+                loadLevel();
+            }
+        }
+
+        function endGame() {
+            stopTimer();
+            document.getElementById('gameContainer').style.display = 'none';
+            document.getElementById('trophyContainer').style.display = 'block';
+            document.getElementById('finalScore').innerText = `${playerName}, כל הכבוד! צברת ${score} נקודות וזמן: ${timeElapsed} שניות`;
+            playWinMusic();
+        }
+
+        function restartGame() {
+            score = 0;
+            level = 1;
+            timeElapsed = 0;
+            document.getElementById('score').innerText = score;
+            document.getElementById('playerContainer').style.display = 'block';
+            document.getElementById('trophyContainer').style.display = 'none';
+            stopTimer();
+        }
+
+        function playWinMusic() {
+            const winMusic = document.getElementById('winMusic');
+            winMusic.play().catch(error => {
+                console.error("Error playing win music:", error);
+            });
+        }
+
+        function goBack() {
+            window.location.href = 'http://your-main-page-url.com';
+        }
+    </script>
+</body>
+</html>

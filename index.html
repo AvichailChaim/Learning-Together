@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מסך כניסה</title>
+    <style>
+        body {
+            background-color: rgba(255, 255, 255, 0.9);
+            background-image: url('D:/AI/VS/Games/Learning Together/background-image.png');
+            background-size: cover;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            color: white;
+            direction: rtl;
+        }
+        #loginContainer {
+            margin: 100px auto;
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            width: 300px;
+        }
+        button {
+            font-size: 1.5em;
+            padding: 15px;
+            margin: 20px 0;
+            width: 100%;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="loginContainer">
+        <h1>היכנס למשחק</h1>
+        <h2>בחר את גיל הילד</h2>
+        <button onclick="startGame('game-over-6.html')">גיל 6 ומעלה</button>
+        <button onclick="startGame('game-under-5.html')">גיל מתחת ל-5</button>
+    </div>
+
+    <script>
+        function startGame(gameUrl) {
+            window.location.href = gameUrl;
+        }
+    </script>
+</body>
+</html>

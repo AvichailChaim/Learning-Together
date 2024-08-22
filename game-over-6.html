@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>משחק חיבור לגיל 6 ומעלה</title>
+    <style>
+        body {
+            background-color: rgba(255, 255, 255, 0.9);
+            background-image: url('D:/AI/VS/Games/Learning Together/background-image.png');
+            background-size: cover;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            color: white;
+            direction: rtl;
+        }
+        #gameContainer {
+            margin: 20px auto;
+            width: 80%;
+        }
+        .balloon {
+            display: inline-block;
+            width: 100px;
+            height: 150px;
+            border-radius: 50%;
+            background-color: red;
+            color: black;
+            font-size: 2em;
+            line-height: 150px;
+            text-align: center;
+            margin: 10px;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        .balloon:after {
+            content: '';
+            display: block;
+            width: 2px;
+            height: 50px;
+            background-color: black;
+            position: absolute;
+            top: 150px;
+            left: 50%;
+            margin-left: -1px;
+        }
+        .balloon.selected {
+            border: 5px solid gold;
+            opacity: 0.7;
+            transform: scale(1.1);
+        }
+        .scoreBox, .valueBox {
+            display: inline-block;
+            width: 100px;
+            height: 50px;
+            font-size: 1.5em;
+            line-height: 50px;
+            text-align: center;
+            border-radius: 5px;
+            margin: 20px;
+            color: white;
+        }
+        .scoreBox {
+            background-color: #007BFF;
+        }
+        .valueBox {
+            background-color: #90EE90;
+        }
+        .label {
+            font-size: 1.2em;
+            margin-bottom: 5px;
+            color: black;
+        }
+        .statusContainer {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 50px;
+        }
+        #instruction {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+        }
+        #nextLevelButton {
+            display: none;
+            font-size: 1.5em;
+            padding: 10px 20px;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+        #trophyContainer {
+            display: none;
+            margin-top: 30px;
+        }
+        #trophyContainer img {
+            width: 200px;
+        }
+        #timer {
+            font-size: 1.5em;
+            margin: 20px;
+        }
+        #instructionsText {
+            font-size: 1.5em;
+            margin: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 10px;
+        }
+        #playerContainer {
+            margin: 20px;
+        }
+        #playerContainer input, #playerContainer button {
+            font-size: 1.5em;
+            padding: 10px;
+            margin-top: 10px;
+            width: 300px;
+        }
+        #playerContainer input {
+            text-align: center;
+        }
+        #playerContainer button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>משחק חיבור לגיל 6 ומעלה</h1>
+    <div id="instructionsText">
+        ברוכים הבאים למשחק החיבור! בשלב הראשון עליך למצוא זוגות בלונים שסכומם 10.
+        בשלב השני זוגות שסכומם 20, בשלב השלישי זוגות שסכומם 30, בשלב הרביעי זוגות שסכומם 40,
+        ובשלב החמישי זוגות שסכומם 50.
+        עליך ללחוץ על שני בלונים שסכומם מתאים למשימה. בהצלחה!
+    </div>
+    <div id="gameContainer">
+        <div id="playerContainer">
+            <input type="text" id="playerName" placeholder="הזן את שמך כאן">
+            <button id="startButton">התחל משחק</button>
+        </div>
+        <div id="timer"></div>
+        <div id="balloonsContainer"></div>
+        <div class="statusContainer">
+            <div>
+                <div class="label">נקודות</div>
+                <div class="scoreBox" id="score">0</div>
+            </div>
+            <div>
+                <div class="label">ערך נבחר</div>
+                <div class="valueBox" id="selectedValue">0</div>
+            </div>
+        </div>
+        <button id="nextLevelButton" onclick="nextLevel()">עבור לשלב הבא</button>
+    </div>
+    <div id="trophyContainer">
+        <img src="C:/Users/Avichail/Downloads/Learning Together/trophy.png" alt="גביע">
+        <div id="finalScore"></div>
+    </div>
+
+    <audio id="backgroundMusic" loop autoplay>
+        <source src="D:/AI/VS/Games/Learning Together/background-music.mp3" type="audio/mpeg">
+        הדפדפן שלך לא תומך בהשמעת קבצי אודיו.
+    </audio>
+    
+    <audio id="winMusic">
+        <source src="D:/AI/VS/Games/Learning Together/win.mp3" type="audio/mpeg">
+        הדפדפן שלך לא תומך בהשמעת קבצי אודיו.
+    </audio>
+
+    <script>
+        let score = 0;
+        let level = 1;
+        let correctPairs = 0;
+        let totalPairs = 0;
+        let playerName = '';
+        let timerInterval;
+        let timeElapsed = 0;
+
+        document.getElementById('startButton').addEventListener('click', function() {
+            startGame();
+        });
+
+        function startGame() {
+            playerName = document.getElementById('playerName').value;
+            if (!playerName) {
+                alert('אנא הזן את שמך כדי להתחיל');
+                return;
+            }
+            document.getElementById('playerContainer').style.display = 'none';
+            playBackgroundMusic();
+            startTimer();
+            loadLevel();
+        }
+
+        function playBackgroundMusic() {
+            const backgroundMusic = document.getElementById('backgroundMusic');
+            backgroundMusic.play().catch(error => {
+                console.error("Error playing background music:", error);
+            });
+        }
+
+        function playWinMusic() {
+            const winMusic = document.getElementById('winMusic');
+            winMusic.play().catch(error => {
+                console.error("Error playing win music:", error);
+            });
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeElapsed++;
+                document.getElementById('timer').innerText = `זמן: ${timeElapsed} שניות`;
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+        }
+
+        function loadLevel() {
+            const balloonsContainer = document.getElementById('balloonsContainer');
+            balloonsContainer.innerHTML = '';
+            correctPairs = 0;
+            let numbers = generateNumbers(level * 10, level * 2 + 4);
+            totalPairs = numbers.length / 2;
+
+            numbers.forEach(num => {
+                let balloon = document.createElement('div');
+                balloon.className = 'balloon';
+                balloon.style.backgroundColor = getRandomColor();
+                balloon.innerText = num;
+                balloon.onclick = () => checkBalloon(balloon);
+                balloonsContainer.appendChild(balloon);
+            });
+        }
+
+        function generateNumbers(sum, count) {
+            let numbers = [];
+            for (let i = 0; i < count / 2; i++) {
+                let num1 = Math.floor(Math.random() * (sum - 1)) + 1;
+                let num2 = sum - num1;
+                numbers.push(num1, num2);
+            }
+            return shuffle(numbers);
+        }
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function getRandomColor() {
+            const colors = ['yellow', 'turquoise', 'pink', 'green', 'hotpink', 'orange', 'blue', 'purple'];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        function checkBalloon(balloon) {
+            const selected = document.querySelectorAll('.balloon.selected');
+            let selectedValue = 0;
+
+            if (selected.length === 0) {
+                balloon.classList.add('selected');
+                selectedValue = parseInt(balloon.innerText);
+            } else if (selected.length === 1) {
+                let firstNum = parseInt(selected[0].innerText);
+                let secondNum = parseInt(balloon.innerText);
+                selectedValue = firstNum + secondNum;
+
+                if (firstNum + secondNum === level * 10) {
+                    score++;
+                    correctPairs++;
+                    selected[0].style.visibility = 'hidden';
+                    balloon.style.visibility = 'hidden';
+                    selected[0].classList.remove('selected');
+                } else {
+                    selected[0].classList.remove('selected');
+                }
+            }
+
+            document.getElementById('score').innerText = score;
+            document.getElementById('selectedValue').innerText = selectedValue;
+
+            if (correctPairs === totalPairs) {
+                document.getElementById('nextLevelButton').style.display = 'inline';
+            }
+        }
+
+        function nextLevel() {
+            level++;
+            if (level > 5) {
+                endGame();
+            } else {
+                document.getElementById('nextLevelButton').style.display = 'none';
+                loadLevel();
+            }
+        }
+
+        function endGame() {
+            stopTimer();
+            document.getElementById('gameContainer').style.display = 'none';
+            document.getElementById('trophyContainer').style.display = 'block';
+            document.getElementById('finalScore').innerText = `${playerName}, כל הכבוד! צברת ${score} נקודות וזמן: ${timeElapsed} שניות`;
+            playWinMusic();
+        }
+    </script>
+</body>
+</html>
